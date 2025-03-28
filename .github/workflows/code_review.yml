@@ -1,20 +1,20 @@
-name: Code Review with OpenAI
 on:
   pull_request:
-    types:
-      - opened
-      - synchronize
-permissions: write-all
+    types: [opened, reopened, ready_for_review]
+  issue_comment:
 jobs:
-  code_review:
+  pr_agent_job:
+    if: ${{ github.event.sender.type != 'Bot' }}
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: write
+    name: Run pr agent on every pull request, respond to user comments
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Code Review
+      - name: PR Agent action step
+        id: pragent
         uses: wayne1838/ai-codereview@main
-        with:
+        env:
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_API_MODEL: "gpt-4-1106-preview"
-          exclude: "yarn.lock,dist/**"
