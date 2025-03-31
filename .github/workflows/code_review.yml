@@ -1,21 +1,20 @@
-name: Code Review GPT
-
+name: Code Review with OpenAI
 on:
   pull_request:
-    branches: [main]
-
+    types:
+      - opened
+      - synchronize
+permissions: write-all
 jobs:
-  run_code_review:
+  code_review:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Code Review
+        uses: freeedcom/ai-codereviewer@main
         with:
-          fetch-depth: 0
-
-      - name: Code Review GPT
-        uses: mattzcarey/code-review-gpt@v0.1.11
-        with:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          MODEL: "gpt-4o"
-          REVIEW_LANGUAGE: "English"
+          OPENAI_API_MODEL: "gpt-4o-mini"
+          exclude: "yarn.lock,dist/**"
