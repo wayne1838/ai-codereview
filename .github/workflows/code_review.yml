@@ -1,20 +1,37 @@
-name: Code Review with OpenAI
+name: Grok Code Review
 on:
   pull_request:
-    types:
-      - opened
-      - synchronize
-permissions: write-all
+    types: [opened, synchronize]
 jobs:
-  code_review:
+  grok_review:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
-      - name: Code Review
-        uses: freeedcom/ai-codereviewer@main
-        with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
-          LLM_PROVIDER: "grok"
-          LLM_MODEL: "grok-3-mini-beta"   # 假設的模型名
+
+      - name: Install GitHub CLI
+        run: sudo apt install gh
+
+      - name: Get PR diff
+        id: get_diff
+        run: |
+          gh auth setup-git
+          echo "DIFF=$(gh pr diff ${{ github.event.pull_request.number }} | base64 -w 0)" >> $GITHUB_ENV
+
+      - name: Call Grok API
+        run: |
+          DIFF_DECODED=$(echo "${{ env.DIFF }}" | base64 -d)
+          RESPONSE=$(curl -s -X POST https://api.grok.ai/v1/chat \
+            -H "Authorization: Bearer ${{ secrets.GROK_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "model": "grok-3-mini-beta",
+              "messages": [{"role": "user", "content": "請幫我 review 以下 PR diff：\n\n'"$DIFF_DECODED"'"}]
+            }')
+          echo "RESPONSE<<EOF" >> $GITHUB_ENV
+          echo "$RESPONSE" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Comment on PR
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} --body "${{ env.RESPONSE }}"
