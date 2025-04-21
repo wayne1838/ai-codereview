@@ -22,7 +22,7 @@ jobs:
       - name: Call Grok API
         run: |
           DIFF_DECODED=$(echo "${{ env.DIFF }}" | base64 -d)
-          RESPONSE=$(curl -s -X POST https://api.grok.ai/v1/chat \
+          RESPONSE=$(curl -s -X POST https://api.x.ai/v1/chat/completions \
             -H "Authorization: Bearer ${{ secrets.GROK_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{
