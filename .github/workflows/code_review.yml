@@ -15,6 +15,6 @@ jobs:
         uses: freeedcom/ai-codereviewer@main
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_API_MODEL: "gpt-4o-mini"
-          exclude: "yarn.lock,dist/**"
+          GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
+          LLM_PROVIDER: "grok"
+          LLM_MODEL: "grok-3-mini-beta"   # 假設的模型名
