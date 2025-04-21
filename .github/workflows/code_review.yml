@@ -24,5 +24,5 @@ jobs:
             -H "Content-Type: application/json" \
             -d "$SAFE_CONTENT")
 
-          echo "$RESPONSE"
-          gh pr comment ${{ github.event.pull_request.number }} --body "$RESPONSE"
+          COMMENT=$(echo "$RESPONSE" | jq -r '.choices[0].message.content')
+          gh pr comment ${{ github.event.pull_request.number }} --body "$COMMENT"
