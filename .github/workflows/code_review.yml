@@ -1,38 +1,28 @@
-name: Grok Code Review
+name: Code Review with Grok
 on:
   pull_request:
     types: [opened, synchronize]
+permissions:
+  pull-requests: write
+
 jobs:
-  grok_review:
+  review:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install GitHub CLI
-        run: sudo apt install gh
-
-      - name: Get PR diff
-        id: get_diff
+      - name: Grok Review and Comment
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
-          gh auth setup-git
-          echo "DIFF=$(gh pr diff ${{ github.event.pull_request.number }} | base64 -w 0)" >> $GITHUB_ENV
 
-      - name: Call Grok API
-        run: |
-          DIFF_DECODED=$(echo "${{ env.DIFF }}" | base64 -d)
+          DIFF=$(gh pr diff ${{ github.event.pull_request.number }})
+          SAFE_CONTENT=$(jq -Rn --arg text "$DIFF" '{"model": "grok-3-mini-beta", "messages": [{"role": "user", "content": $text}]}')
+
           RESPONSE=$(curl -s -X POST https://api.x.ai/v1/chat/completions \
             -H "Authorization: Bearer ${{ secrets.GROK_API_KEY }}" \
             -H "Content-Type: application/json" \
-            -d '{
-              "model": "grok-3-mini-beta",
-              "messages": [{"role": "user", "content": "請幫我 review 以下 PR diff：\n\n'"$DIFF_DECODED"'"}]
-            }')
-          echo "RESPONSE<<EOF" >> $GITHUB_ENV
-          echo "$RESPONSE" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+            -d "$SAFE_CONTENT")
 
-      - name: Comment on PR
-        run: |
-          gh pr comment ${{ github.event.pull_request.number }} --body "${{ env.RESPONSE }}"
+          echo "$RESPONSE"
+          gh pr comment ${{ github.event.pull_request.number }} --body "$RESPONSE"
