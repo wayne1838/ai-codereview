@@ -1,8 +1,13 @@
 name: Code Review with Grok
+
 on:
   pull_request:
     types: [opened, synchronize]
+    branches:
+      - develop
+
 permissions:
+  contents: read
   pull-requests: write
 
 jobs:
@@ -17,7 +22,10 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
           DIFF=$(gh pr diff ${{ github.event.pull_request.number }})
-          SAFE_CONTENT=$(jq -Rn --arg text "$DIFF" '{"model": "grok-3-mini-beta", "messages": [{"role": "user", "content": $text}]}')
+
+          PROMPT="請用中文審查以下 PR 的程式碼變更，提供精簡、具體的改善建議與注意事項，避免冗長。請直接針對程式碼給出簡明建議與理由。\n\n$DIFF"
+
+          SAFE_CONTENT=$(jq -Rn --arg text "$PROMPT" '{"model": "grok-3-mini-beta", "messages": [{"role": "user", "content": $text}]}')
 
           RESPONSE=$(curl -s -X POST https://api.x.ai/v1/chat/completions \
             -H "Authorization: Bearer ${{ secrets.GROK_API_KEY }}" \
